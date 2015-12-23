@@ -2,6 +2,22 @@ BigstarProgressBar
 ================
 <a href="https://www.youtube.com/watch?v=68c2mPPUze0" target="_blank" title="Show Animation from YouTube">Show Animation from YouTube</a>
 
+##Include your project
+add build.gradle
+```
+allprojects {
+	repositories {
+		...
+		maven { url "https://jitpack.io" }
+	}
+}
+```
+```
+dependencies {
+    compile 'com.github.bigstark:bigstarplayerview:1.1'
+}
+```
+
 ## Usage
 ``` xml
   <com.bigstark.progressbar.BigStarProgressBar

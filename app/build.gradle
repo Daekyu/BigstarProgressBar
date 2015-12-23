@@ -1,13 +1,18 @@
 apply plugin: 'com.android.application'
 
+repositories {
+    maven { url "https://jitpack.io" }
+    jcenter()
+}
+
 android {
-    compileSdkVersion 21
-    buildToolsVersion "21.1.2"
+    compileSdkVersion ANDROID_BUILD_SDK_VERSION as Integer
+    buildToolsVersion ANDROID_BUILD_TOOLS_VERSION as String
 
     defaultConfig {
-        applicationId "com.bigstark.progressbar"
-        minSdkVersion 15
-        targetSdkVersion 21
+        applicationId "com.bigstark.progressbar.sample"
+        minSdkVersion ANDROID_BUILD_MIN_SDK_VERSION as Integer
+        targetSdkVersion ANDROID_BUILD_TARGET_SDK_VERSION as Integer
         versionCode 1
         versionName "1.0"
     }
@@ -20,6 +25,5 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support:appcompat-v7:21.0.3'
+    compile project(':library')
 }

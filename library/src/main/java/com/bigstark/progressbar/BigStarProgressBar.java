@@ -9,7 +9,6 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 
 /**
@@ -18,6 +17,10 @@ import android.view.View;
 public class BigStarProgressBar extends View {
   private final long DURATION_DEFAULT = 1000;
   private final float RADIUS_DEFAULT = 100f;
+
+  private Path backgroundPath;
+  private Path barPath;
+  private Paint paint;
 
   private long duration = DURATION_DEFAULT;
 
@@ -34,17 +37,16 @@ public class BigStarProgressBar extends View {
   private float offsetT2 = t2 / duration;
 
   public BigStarProgressBar(Context context) {
-    super(context);
-    initValues();
+    this(context, null);
   }
 
   public BigStarProgressBar(Context context, AttributeSet attrs) {
-    super(context, attrs);
-    initValues();
+    this(context, attrs, 0);
   }
 
   public BigStarProgressBar(Context context, AttributeSet attrs, int defStyleAttr) {
     super(context, attrs, defStyleAttr);
+
     initValues();
   }
 
@@ -56,16 +58,30 @@ public class BigStarProgressBar extends View {
     offset1 = t1 * 3 * (float) Math.PI * radius / (4 * length * duration);
     offset2 = offset1 * 5 / 3;
 
-    Log.v("TAG", String.format("t1 : %f, t2 : %f, offset1 : %f, offset2 : %f", t1, t2, offset1, offset2));
+    initPaths();
+    initPaint();
+  }
+
+  private void initPaths() {
+    backgroundPath = makeBackgroundPath();
+    barPath = new Path();
+
+  }
+
+  private void initPaint() {
+    paint = new Paint();
+    paint.setAntiAlias(true);
+    paint.setStyle(Paint.Style.STROKE);
+    paint.setStrokeWidth(15);
   }
 
 
-  /*
+  /**
    * first circle is degree 135 to 0, radius is origin.
    * second circle is degree 0 to -180, radius is origin / 2.
    * third circle is degree -180 to -315, radius is origin.
    */
-  private Path makePath() {
+  private Path makeBackgroundPath() {
     Path path = new Path();
 
     float firstCenterX = radius / (float) Math.sqrt(2);
@@ -89,9 +105,12 @@ public class BigStarProgressBar extends View {
     return path;
   }
 
-  private Path updateBarPath() {
-    Path path = new Path();
-
+  private void updateBarPath() {
+    if (barPath == null) {
+      barPath = new Path();
+    } else {
+      barPath.reset();
+    }
 
     float firstCenterX = radius / (float) Math.sqrt(2);
     float firstCenterY = radius;
@@ -102,10 +121,10 @@ public class BigStarProgressBar extends View {
     firstStartAngle = firstStartAngle > 135f? 135f : (firstStartAngle < 0f ? 0f : firstStartAngle);
     float firstSweepAngle = offset < offset1 ? -135f * offset / offset1 : -firstStartAngle;
     firstSweepAngle = firstSweepAngle < -135f ? -135f : (firstSweepAngle > 0f ? 0f : firstSweepAngle);
-    path.addArc(firstCircle, firstStartAngle, firstSweepAngle);
+    barPath.addArc(firstCircle, firstStartAngle, firstSweepAngle);
 
     if (offset < offset1) {
-      return path;
+      return;
     }
 
     float secondCenterX = radius / (float) Math.sqrt(2) + 0.5f * radius;
@@ -117,9 +136,9 @@ public class BigStarProgressBar extends View {
     secondStartAngle = secondStartAngle > 0 ? 0 : (secondStartAngle < -180f ? -180f : secondStartAngle);
     float secondSweepAngle = offset < offsetT1 + offset1 ? -180f * (offset - offset1) / (offset2 - offset1) : -180f - secondStartAngle;
     secondSweepAngle = secondSweepAngle < -180f ? -180f : (secondSweepAngle > 0 ? 0 : secondSweepAngle);
-    path.addArc(secondCircle, secondStartAngle, secondSweepAngle);
+    barPath.addArc(secondCircle, secondStartAngle, secondSweepAngle);
     if (offset >= offset1 && offset < offset2) {
-      return path;
+      return;
     }
 
     float thirdCenterX = radius / (float) Math.sqrt(2) + radius;
@@ -131,34 +150,23 @@ public class BigStarProgressBar extends View {
     thirdStartAngle = thirdStartAngle > -180f ? -180f : (thirdStartAngle < -315f ? -315f : thirdStartAngle);
     float thirdSweepAngle = offset < offsetT2 ? -135f * (offset - offset2) / (offsetT2 - offset2) : -315f - thirdStartAngle;
     thirdSweepAngle = thirdSweepAngle < -135f ? -135f : (thirdSweepAngle > 0f ? 0f : thirdSweepAngle);
-    path.addArc(thirdCircle, thirdStartAngle, thirdSweepAngle);
-    if (offset >= offset2 && offset < offsetT2) {
-      return path;
-    }
-
-    return path;
+    barPath.addArc(thirdCircle, thirdStartAngle, thirdSweepAngle);
   }
 
   @Override
   protected void onDraw(Canvas canvas) {
     super.onDraw(canvas);
+    if (paint == null) {
+      paint = new Paint();
+    }
 
-    Path path = makePath();
-    Paint paint = new Paint();
-    paint.setAntiAlias(true);
-    paint.setStyle(Paint.Style.STROKE);
-    paint.setStrokeWidth(15);
     paint.setColor(Color.parseColor("#AAAAAA"));
+    canvas.drawPath(backgroundPath, paint);
 
-    canvas.drawPath(path, paint);
-
-    path = updateBarPath();
-    paint.setAntiAlias(true);
-    paint.setStyle(Paint.Style.STROKE);
-    paint.setStrokeWidth(15);
     paint.setColor(Color.parseColor("#5A3296"));
 
-    canvas.drawPath(path, paint);
+    updateBarPath();
+    canvas.drawPath(barPath, paint);
   }
 
   public void start() {
@@ -167,7 +175,7 @@ public class BigStarProgressBar extends View {
       @Override
       public void onAnimationUpdate(ValueAnimator animation) {
         offset = animation.getAnimatedFraction();
-        postInvalidate();
+        postInvalidateDelayed(10);
       }
     });
     animator.setDuration(duration);
